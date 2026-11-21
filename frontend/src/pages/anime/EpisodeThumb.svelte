@@ -6,6 +6,7 @@
   import { MorphIcon } from 'morphicons/svelte';
   import { Play, Check } from 'lucide';
   import type { PlayableEpisode } from '../../api/anime';
+  import { settingsState } from '../../app/settings.svelte';
 
   interface Props {
     episode: PlayableEpisode;
@@ -190,7 +191,7 @@
   });
 
   function handleMouseEnter() {
-    if (typeof window === 'undefined' || !previewStream) return;
+    if (!settingsState.hoverEpisodePreview || typeof window === 'undefined' || !previewStream) return;
     if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) return;
     window.clearTimeout(hoverTimer);
     hoverTimer = window.setTimeout(() => {

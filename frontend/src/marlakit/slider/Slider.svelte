@@ -6,6 +6,7 @@
     step?: number;
     ariaLabel?: string;
     disabled?: boolean;
+    variant?: 'capsule' | 'classic';
     class?: string;
     onchange?: (value: number) => void;
     oncommit?: (value: number) => void;
@@ -18,6 +19,7 @@
     step = 1,
     ariaLabel = 'Slider',
     disabled = false,
+    variant = 'capsule',
     class: className = '',
     onchange,
     oncommit
@@ -110,6 +112,7 @@
 <div
   bind:this={trackEl}
   class="marla-slider {className}"
+  class:is-capsule={variant === 'capsule'}
   class:is-dragging={dragging}
   class:is-disabled={disabled}
   role="slider"
@@ -128,7 +131,9 @@
   <div class="marla-slider-rail">
     <div class="marla-slider-fill" style:width="{pct}%"></div>
   </div>
-  <div class="marla-slider-thumb" style:left="{pct}%"></div>
+  {#if variant !== 'capsule'}
+    <div class="marla-slider-thumb" style:left="{pct}%"></div>
+  {/if}
 </div>
 
 <style>
@@ -142,6 +147,10 @@
     touch-action: none;
     outline: none;
     user-select: none;
+  }
+
+  .marla-slider.is-capsule {
+    height: 18px;
   }
 
   .marla-slider.is-disabled {
@@ -159,6 +168,11 @@
     transition: height 0.16s ease, background-color 0.16s ease;
   }
 
+  .marla-slider.is-capsule .marla-slider-rail {
+    height: 6px;
+    background: var(--mila-app-surfaceGlass, rgba(255, 255, 255, 0.08));
+  }
+
   .marla-slider:hover:not(.is-disabled) .marla-slider-rail,
   .marla-slider:focus-visible:not(.is-disabled) .marla-slider-rail,
   .marla-slider.is-dragging .marla-slider-rail {
@@ -166,11 +180,22 @@
     background: rgba(255, 255, 255, 0.3);
   }
 
+  .marla-slider.is-capsule:hover:not(.is-disabled) .marla-slider-rail,
+  .marla-slider.is-capsule:focus-visible:not(.is-disabled) .marla-slider-rail,
+  .marla-slider.is-capsule.is-dragging .marla-slider-rail {
+    height: 6px;
+    background: var(--mila-app-surfaceHover, rgba(255, 255, 255, 0.12));
+  }
+
   .marla-slider-fill {
     position: absolute;
     inset: 0 auto 0 0;
     border-radius: 999px;
     background: #ffffff;
+  }
+
+  .marla-slider.is-capsule .marla-slider-fill {
+    background: var(--mila-toggle-trackOn, var(--mila-accent-primary, #ffffff));
   }
 
   .marla-slider-thumb {

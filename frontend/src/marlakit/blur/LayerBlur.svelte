@@ -41,18 +41,19 @@
 
     const job = (async (): Promise<string | null> => {
       try {
-        const img = new Image();
-        img.decoding = 'async';
-        img.referrerPolicy = 'no-referrer';
-        // Only enable crossOrigin for external URLs if same-origin or explicit CORS; skip tainted errors cleanly.
+        // Cross-origin CDNs (Shikimori / AniLibria) omit Access-Control-Allow-Origin,
+        // so only bake offscreen canvas for same-origin/blob/data assets and use lightweight CSS blur otherwise.
         const sameOrigin =
           src.startsWith('/') ||
           src.startsWith('data:') ||
           src.startsWith('blob:') ||
           src.startsWith(window.location.origin);
         if (!sameOrigin) {
-          img.crossOrigin = 'anonymous';
+          return null;
         }
+        const img = new Image();
+        img.decoding = 'async';
+        img.referrerPolicy = 'no-referrer';
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve();
           img.onerror = () => reject(new Error('img load failed'));

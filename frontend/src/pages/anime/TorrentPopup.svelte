@@ -10,6 +10,7 @@
   import ComboBox from '../../marlakit/combo/ComboBox.svelte';
   import { portal } from '../../marlakit/portal';
   import type { TorrentSearchItem } from '../../api/providers/torrent';
+  import { settingsState } from '../../app/settings.svelte';
 
   interface Props {
     open: boolean;
@@ -147,10 +148,30 @@
   }
 
   $effect(() => {
-    if (!open) {
+    if (open) {
+      qualityFilter = settingsState.defaultTorrentQuality || 'all';
+    } else {
       activeMenu = null;
     }
   });
+
+  function scoreBestTorrent(item: TorrentSearchItem): number {
+    let score = Math.min(item.seeders, 300);
+    const qual = detectQuality(item);
+    if (settingsState.preferHiResTorrents) {
+      if (qual === '2160p') score += 450;
+      else if (qual === '1440p') score += 320;
+      else if (qual === '1080p') score += 160;
+    }
+    if (settingsState.preferRuTorrents) {
+      const src = item.source.toLowerCase();
+      const txt = `${item.title} ${item.quality ?? ''}`.toLowerCase();
+      if (src === 'anilibria' || src === 'rutor' || /rus|dub|band|libria|дубляж|рут|[а-яё]/i.test(txt)) {
+        score += 360;
+      }
+    }
+    return score;
+  }
 
   const filteredResults = $derived.by(() => {
     let base = results;
@@ -163,7 +184,9 @@
     if (formatFilter !== 'all') {
       base = base.filter((item) => matchesFormat(item, formatFilter));
     }
-    if (sortBy === 'seeds') {
+    if (sortBy === 'best') {
+      base = [...base].sort((a, b) => scoreBestTorrent(b) - scoreBestTorrent(a));
+    } else if (sortBy === 'seeds') {
       base = [...base].sort((a, b) => b.seeders - a.seeders);
     } else if (sortBy === 'size-asc') {
       base = [...base].sort((a, b) => {

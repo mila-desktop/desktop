@@ -7,8 +7,6 @@
   import SocialButton from "../../marlakit/button/SocialButton.svelte";
   import GitButton from "../../marlakit/button/GitButton.svelte";
   import ComboBox from "../../marlakit/combo/ComboBox.svelte";
-  import ArrowSwitcher from "../../marlakit/switcher/ArrowSwitcher.svelte";
-  import RgbLine from "../../marlakit/slider/RgbLine.svelte";
   import LayerBlur from "../../marlakit/blur/LayerBlur.svelte";
   import type { ComboOption, ComboSection } from "../../marlakit/combo/types";
   import { pages } from "../../pages";
@@ -16,6 +14,7 @@
   import { search, openSearch, setSearchAnchor } from "../../app/search.svelte";
   import { auth, initAuth, loginWithGoogle, logout } from "../../app/auth.svelte";
   import { friendsState, openFriendsPopup } from "../../app/friends.svelte";
+  import { openSettingsPopup } from "../../app/settings.svelte";
   import { connectWatchTogether, watchTogetherState } from "../../app/watchTogether.svelte";
   import FriendsPopup from "../friends/FriendsPopup.svelte";
   import RoomInvitePopup from "../friends/RoomInvitePopup.svelte";
@@ -29,20 +28,7 @@
     toggleAppFullscreen,
     type AppUpdateStatus
   } from "../../app/bindings.svelte";
-  import {
-    i18n,
-    isLocaleCode,
-    setLocale,
-    SUPPORTED_LOCALES,
-    t
-  } from "../../app/i18n.svelte";
-  import {
-    setCustomHue,
-    setThemeMode,
-    SUPPORTED_THEMES,
-    theme,
-    type ThemeMode
-  } from "../../app/theme.svelte";
+  import { t } from "../../app/i18n.svelte";
 
   interface Props {
     hidden?: boolean;
@@ -165,16 +151,14 @@
 
   function handleAccountSelect(opt: ComboOption) {
     const val = String(opt.value);
-    if (val.startsWith("lang:")) {
-      const code = val.slice("lang:".length);
-      if (isLocaleCode(code)) {
-        setLocale(code);
-      }
-      return;
-    }
     if (val === "friends") {
       menuOpen = false;
       openFriendsPopup();
+      return;
+    }
+    if (val === "settings") {
+      menuOpen = false;
+      openSettingsPopup();
       return;
     }
     if (val === "logout") {
@@ -209,27 +193,11 @@
                 ? String(friendsState.friends.length)
                 : undefined
         },
+        { value: "settings", label: t("header.settings") },
         { value: "logout", label: t("header.signOut"), disabled: auth.loading }
       ]
     }
   ]);
-
-  const localeOptions = SUPPORTED_LOCALES.map((loc) => ({
-    value: loc.code,
-    label: loc.nativeLabel
-  }));
-
-  const themeOptions = $derived.by(() => {
-    const labels: Record<ThemeMode, string> = {
-      dark: t("setup.themeDark"),
-      light: t("setup.themeLight"),
-      custom: t("setup.themeCustom")
-    };
-    return SUPPORTED_THEMES.map((mode) => ({
-      value: mode,
-      label: labels[mode]
-    }));
-  });
 
   function revealBlur(
     _node: HTMLElement,
@@ -338,43 +306,6 @@
             menuClass="auth-combo-menu"
             onselect={handleAccountSelect}
           >
-            {#snippet header()}
-              <div class="profile-control-block">
-                <span class="profile-control-label">{t("header.language")}</span>
-                <ArrowSwitcher
-                  compact
-                  value={i18n.locale}
-                  options={localeOptions}
-                  ariaLabel={t("header.language")}
-                  onchange={(val) => {
-                    const code = String(val);
-                    if (isLocaleCode(code)) setLocale(code);
-                  }}
-                />
-              </div>
-              <div class="profile-control-block">
-                <span class="profile-control-label">{t("header.theme")}</span>
-                <ArrowSwitcher
-                  compact
-                  value={theme.mode}
-                  options={themeOptions}
-                  ariaLabel={t("header.theme")}
-                  onchange={(val) => {
-                    const next = String(val) as ThemeMode;
-                    if (SUPPORTED_THEMES.includes(next)) setThemeMode(next);
-                  }}
-                />
-                {#if theme.mode === "custom"}
-                  <div
-                    class="profile-rgb-wrap"
-                    in:revealBlur={{ duration: 240, scale: 0.96, blur: 5 }}
-                    out:revealBlur={{ duration: 160, scale: 0.96, blur: 4 }}
-                  >
-                    <RgbLine hue={theme.hue} onchange={(nextHue) => setCustomHue(nextHue)} />
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
             {#snippet trigger({ open, toggle })}
               <button
                 type="button"
@@ -790,25 +721,6 @@
 
   :global(.auth-combo-menu) {
     top: 36px !important;
-  }
-
-  .profile-control-block {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .profile-control-label {
-    font-family: 'RF Dewi Extended', system-ui, sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--mila-popup-comboSectionText, rgba(255, 255, 255, 0.24));
-    user-select: none;
-  }
-
-  .profile-rgb-wrap {
-    padding: 2px 2px 0;
   }
 
   .auth-trigger {

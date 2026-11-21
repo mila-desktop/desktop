@@ -1,3 +1,4 @@
+import { getWailsMilaBridge } from '../api/bridge';
 import { cloudApi, type CloudUser } from '../api/cloud';
 import { startCloudUserSync, stopCloudUserSync } from './cloudSync.svelte';
 import { resetFriendsState } from './friends.svelte';
@@ -52,6 +53,16 @@ export async function initAuth(): Promise<void> {
 export async function loginWithGoogle(settleDelayMs = 1400): Promise<CloudUser | null> {
   if (auth.loading) {
     return auth.user;
+  }
+  if (
+    !getWailsMilaBridge()?.CloudLoginWithGoogle &&
+    typeof window !== 'undefined' &&
+    window.location.port === '5173'
+  ) {
+    // Redirect from raw Vite dev port (5173) to Wails DevServer (34115) so Go OAuth/cloud bindings are active.
+    const nextUrl = `http://localhost:34115${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.assign(nextUrl);
+    return null;
   }
   auth.loading = true;
   auth.error = null;

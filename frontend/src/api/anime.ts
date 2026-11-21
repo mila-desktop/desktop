@@ -18,6 +18,7 @@ import {
 } from './providers/shared';
 import { resolveBackendApiBase } from './bridge';
 import { i18n, t } from '../app/i18n.svelte';
+import { settingsState } from '../app/settings.svelte';
 
 const SHIKI_GRAPHQL = 'https://shikimori.io/api/graphql';
 const ANILIST_GRAPHQL = 'https://graphql.anilist.co';
@@ -984,6 +985,116 @@ export async function resolvePlayableRelease(target: WatchTarget): Promise<Playa
     if (direct) return { ...direct, provider: direct.provider ?? 'aniliberty' };
   }
 
+  const prefProvider = settingsState.preferredProvider;
+  const providerTitles = dedupeSearchQueries([
+    shikiArt?.russian,
+    target.title,
+    shikiArt?.english,
+    shikiArt?.name,
+    ...(target.searchQueries ?? [])
+  ]);
+
+  if (prefProvider === 'dreamcast') {
+    const dcMatch = await dreamCastLoader
+      .load()
+      .then((m) => m.findDreamCastMatch(providerTitles, shikiArt?.year ?? null))
+      .catch(() => null);
+    if (dcMatch && dcMatch.episodes.length > 0) {
+      return {
+        id: dcMatch.releaseId,
+        alias: dcMatch.voice.id,
+        title: shikiArt?.english || shikiArt?.name || dcMatch.title || target.title,
+        titleEnglish: shikiArt?.english || shikiArt?.name,
+        year: shikiArt?.year ?? dcMatch.year,
+        provider: 'dreamcast',
+        voiceLabel: dcMatch.voice.label,
+        voiceActors: dcMatch.voiceActors,
+        poster: shikiArt?.posterOriginal || shikiArt?.posterMain || dcMatch.poster,
+        banner: shikiArt?.screenshots?.[0] || dcMatch.poster,
+        episodes: dcMatch.episodes
+      };
+    }
+  } else if (prefProvider === 'animego') {
+    const agoMatch = await animeGoLoader
+      .load()
+      .then((m) => m.findAnimeGOMatch(providerTitles, shikiArt?.year ?? null))
+      .catch(() => null);
+    if (agoMatch && agoMatch.dubs.length > 0) {
+      const preferredOrder = ['студийная банда', 'anilibria', 'dream cast', 'shiza', 'anidub'];
+      let chosen: AnimeGODubOption | undefined;
+      for (const kw of preferredOrder) {
+        chosen = agoMatch.dubs.find((d) => !d.voice.isSub && d.voice.label.toLowerCase().includes(kw));
+        if (chosen) break;
+      }
+      chosen = chosen ?? agoMatch.dubs.find((d) => !d.voice.isSub) ?? agoMatch.dubs[0];
+      if (chosen.episodes.length > 0) {
+        return {
+          id: agoMatch.animeId,
+          alias: chosen.voice.id,
+          title: shikiArt?.english || shikiArt?.name || agoMatch.title || target.title,
+          titleEnglish: shikiArt?.english || shikiArt?.name,
+          year: shikiArt?.year ?? agoMatch.year,
+          provider: 'animego',
+          voiceLabel: chosen.voice.label,
+          primarySourceId: chosen.voice.sourceId,
+          primaryIsSub: chosen.voice.isSub,
+          poster: shikiArt?.posterOriginal || shikiArt?.posterMain || agoMatch.poster,
+          banner: shikiArt?.screenshots?.[0] || agoMatch.poster,
+          episodes: chosen.episodes
+        };
+      }
+    }
+  } else if (prefProvider === 'animevost') {
+    const avMatch = await animeVostLoader
+      .load()
+      .then((m) => m.findAnimeVostMatch(providerTitles, shikiArt?.year ?? null))
+      .catch(() => null);
+    if (avMatch && avMatch.episodes.length > 0) {
+      return {
+        id: avMatch.releaseId,
+        alias: avMatch.voice.id,
+        title: shikiArt?.english || shikiArt?.name || avMatch.title || target.title,
+        titleEnglish: shikiArt?.english || shikiArt?.name,
+        year: shikiArt?.year ?? avMatch.year,
+        provider: 'animevost',
+        voiceLabel: avMatch.voice.label,
+        poster: shikiArt?.posterOriginal || shikiArt?.posterMain || avMatch.poster,
+        banner: shikiArt?.screenshots?.[0] || avMatch.poster,
+        episodes: avMatch.episodes
+      };
+    }
+  } else if (prefProvider === 'kodik') {
+    const kodikMatch = await kodikLoader
+      .load()
+      .then((m) => m.findKodikMatch(providerTitles, shikiArt?.year ?? null, target.shikiId))
+      .catch(() => null);
+    if (kodikMatch && kodikMatch.dubs.length > 0) {
+      const preferredOrder = ['anidub', 'студийная банда', 'anilibria', 'dream cast', 'shiza'];
+      let chosen: KodikDubOption | undefined;
+      for (const kw of preferredOrder) {
+        chosen = kodikMatch.dubs.find((d) => !d.voice.isSub && d.voice.label.toLowerCase().includes(kw));
+        if (chosen) break;
+      }
+      chosen = chosen ?? kodikMatch.dubs.find((d) => !d.voice.isSub) ?? kodikMatch.dubs[0];
+      if (chosen.episodes.length > 0) {
+        return {
+          id: kodikMatch.animeId,
+          alias: chosen.voice.id,
+          title: shikiArt?.english || shikiArt?.name || kodikMatch.title || target.title,
+          titleEnglish: shikiArt?.english || shikiArt?.name,
+          year: shikiArt?.year ?? kodikMatch.year,
+          provider: 'kodik',
+          voiceLabel: chosen.voice.label,
+          primarySourceId: chosen.voice.sourceId,
+          primaryIsSub: chosen.voice.isSub,
+          poster: shikiArt?.posterOriginal || shikiArt?.posterMain || kodikMatch.poster,
+          banner: shikiArt?.screenshots?.[0] || kodikMatch.poster,
+          episodes: chosen.episodes
+        };
+      }
+    }
+  }
+
   const queries = dedupeSearchQueries([
     ...(target.searchQueries ?? []),
     shikiArt?.russian ?? '',
@@ -1035,14 +1146,6 @@ export async function resolvePlayableRelease(target: WatchTarget): Promise<Playa
     const rel = await fetchReleaseByIdOrAlias(String(cand.id), shikiArt, target.shikiId);
     if (rel) return { ...rel, provider: 'aniliberty' };
   }
-
-  const providerTitles = dedupeSearchQueries([
-    shikiArt?.russian,
-    target.title,
-    shikiArt?.english,
-    shikiArt?.name,
-    ...(target.searchQueries ?? [])
-  ]);
 
   const [dcRes, agoRes, avRes, kodikRes] = await Promise.allSettled([
     dreamCastLoader

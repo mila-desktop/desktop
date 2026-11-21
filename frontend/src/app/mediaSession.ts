@@ -3,6 +3,7 @@
  * Powers OS media keys (play/pause/next/prev) and the Windows lock-screen / SMTC overlay.
  * Every call is a no-op when the API is unavailable, so it is safe inside `vite dev` too.
  */
+import { settingsState } from './settings.svelte';
 
 export interface MediaSessionHandlers {
   play: () => void;
@@ -42,7 +43,7 @@ function setHandler(action: MediaSessionAction, handler: MediaSessionActionHandl
 export function installMediaSessionHandlers(handlers: MediaSessionHandlers | null): void {
   if (!getSession()) return;
 
-  if (!handlers) {
+  if (!handlers || !settingsState.hardwareMediaKeys) {
     setHandler('play', null);
     setHandler('pause', null);
     setHandler('stop', null);
@@ -74,7 +75,7 @@ export function updateNowPlaying(info: NowPlayingInfo | null): void {
   const session = getSession();
   if (!session) return;
 
-  if (!info || !info.title.trim() || typeof MediaMetadata === 'undefined') {
+  if (!settingsState.hardwareMediaKeys || !info || !info.title.trim() || typeof MediaMetadata === 'undefined') {
     try {
       session.metadata = null;
     } catch {
@@ -103,7 +104,7 @@ export function updateNowPlayingPosition(
   playbackRate = 1
 ): void {
   const session = getSession();
-  if (!session || typeof session.setPositionState !== 'function') return;
+  if (!session || !settingsState.hardwareMediaKeys || typeof session.setPositionState !== 'function') return;
   if (!Number.isFinite(durationSec) || durationSec <= 0) return;
 
   const position = Math.min(
@@ -124,8 +125,18 @@ export function setMediaSessionPlaybackState(state: PlaybackState): void {
   const session = getSession();
   if (!session) return;
   try {
-    session.playbackState = state;
+    session.playbackState = settingsState.hardwareMediaKeys ? state : 'none';
   } catch {
     // Ignore unsupported states.
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('mila:sys-prefs-changed', () => {
+    if (!settingsState.hardwareMediaKeys) {
+      installMediaSessionHandlers(null);
+      updateNowPlaying(null);
+      setMediaSessionPlaybackState('none');
+    }
+  });
 }

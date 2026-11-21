@@ -7,10 +7,12 @@
   import PageHost from './PageHost.svelte';
   import PlayerDock from './PlayerDock.svelte';
   import SearchPopup from '../section/search/SearchPopup.svelte';
+  import SettingsPopup from '../section/settings/SettingsPopup.svelte';
   import SetupScene from '../section/setup/SetupScene.svelte';
   import { bootState, initBootGate } from './boot.svelte';
   import { bindings, mountBindingsController } from './bindings.svelte';
   import { getSavedPageScroll, registerScrollBridge, router } from './router.svelte';
+  import { settingsState } from './settings.svelte';
   import './theme.svelte';
   import type { PageId } from '../pages';
 
@@ -36,6 +38,14 @@
   function handleViewportScroll(scrollTop: number) {
     const top = Math.max(0, scrollTop);
     headerScrolled = top > 28;
+
+    if (!settingsState.autoHideHeader) {
+      headerHidden = false;
+      lastScrollTop = top;
+      downScrollAccum = 0;
+      upScrollAccum = 0;
+      return;
+    }
 
     if (top <= 18) {
       headerHidden = false;
@@ -63,6 +73,12 @@
       }
     }
   }
+
+  $effect(() => {
+    if (!settingsState.autoHideHeader) {
+      headerHidden = false;
+    }
+  });
 
   function handlePageBeforeEnter(pageId: PageId) {
     const targetTop = getSavedPageScroll(pageId);
@@ -112,6 +128,7 @@
   <!-- global popups (above everything) -->
   <PlayerDock />
   <SearchPopup />
+  <SettingsPopup />
 
   {#if setupOpen}
     <SetupScene

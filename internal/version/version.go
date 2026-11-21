@@ -7,7 +7,7 @@ import (
 )
 
 // Version holds the application semantic version tag; release builds override it via -ldflags.
-var Version = "v0.1.7.2"
+var Version = "v0.1.8"
 
 // Current returns the active application version, honoring MILA_APP_VERSION if set.
 func Current() string {

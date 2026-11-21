@@ -22,8 +22,68 @@ export function CheckAndInstallUpdate() {
   return window['go']['mila']['Mila']['CheckAndInstallUpdate']();
 }
 
+export function CloudAcceptFriendRequest(arg1) {
+  return window['go']['mila']['Mila']['CloudAcceptFriendRequest'](arg1);
+}
+
+export function CloudBlockUser(arg1) {
+  return window['go']['mila']['Mila']['CloudBlockUser'](arg1);
+}
+
+export function CloudCancelWatchRoomInvite(arg1) {
+  return window['go']['mila']['Mila']['CloudCancelWatchRoomInvite'](arg1);
+}
+
+export function CloudConnectWatchTogether(arg1) {
+  return window['go']['mila']['Mila']['CloudConnectWatchTogether'](arg1);
+}
+
+export function CloudCreateWatchRoom(arg1) {
+  return window['go']['mila']['Mila']['CloudCreateWatchRoom'](arg1);
+}
+
+export function CloudDeclineFriendRequest(arg1) {
+  return window['go']['mila']['Mila']['CloudDeclineFriendRequest'](arg1);
+}
+
+export function CloudDeclineWatchRoomInvite(arg1) {
+  return window['go']['mila']['Mila']['CloudDeclineWatchRoomInvite'](arg1);
+}
+
+export function CloudDisconnectWatchTogether() {
+  return window['go']['mila']['Mila']['CloudDisconnectWatchTogether']();
+}
+
 export function CloudGetSession() {
   return window['go']['mila']['Mila']['CloudGetSession']();
+}
+
+export function CloudGetWatchRoom() {
+  return window['go']['mila']['Mila']['CloudGetWatchRoom']();
+}
+
+export function CloudHeartbeatPresence(arg1, arg2) {
+  return window['go']['mila']['Mila']['CloudHeartbeatPresence'](arg1, arg2);
+}
+
+export function CloudInviteFriendToWatchRoom(arg1) {
+  return window['go']['mila']['Mila']['CloudInviteFriendToWatchRoom'](arg1);
+}
+
+export function CloudJoinWatchRoom(arg1) {
+  return window['go']['mila']['Mila']['CloudJoinWatchRoom'](arg1);
+}
+
+export function CloudKickWatchRoomMember(arg1) {
+  return window['go']['mila']['Mila']['CloudKickWatchRoomMember'](arg1);
+}
+
+export function CloudLeaveWatchRoom() {
+  return window['go']['mila']['Mila']['CloudLeaveWatchRoom']();
+}
+
+export function CloudListFriends() {
+  return window['go']['mila']['Mila']['CloudListFriends']();
 }
 
 export function CloudLoginWithGoogle() {
@@ -38,12 +98,64 @@ export function CloudPing() {
   return window['go']['mila']['Mila']['CloudPing']();
 }
 
+export function CloudRemoveFriend(arg1) {
+  return window['go']['mila']['Mila']['CloudRemoveFriend'](arg1);
+}
+
 export function CloudRequest(arg1, arg2, arg3) {
   return window['go']['mila']['Mila']['CloudRequest'](arg1, arg2, arg3);
 }
 
+export function CloudSearchUsers(arg1, arg2) {
+  return window['go']['mila']['Mila']['CloudSearchUsers'](arg1, arg2);
+}
+
+export function CloudSendFriendRequest(arg1) {
+  return window['go']['mila']['Mila']['CloudSendFriendRequest'](arg1);
+}
+
+export function CloudSendWatchRoomChat(arg1, arg2) {
+  return window['go']['mila']['Mila']['CloudSendWatchRoomChat'](arg1, arg2);
+}
+
+export function CloudSetUsername(arg1) {
+  return window['go']['mila']['Mila']['CloudSetUsername'](arg1);
+}
+
+export function CloudSetWatchRoomMedia(arg1) {
+  return window['go']['mila']['Mila']['CloudSetWatchRoomMedia'](arg1);
+}
+
+export function CloudSyncWatchRoomPlayback(arg1) {
+  return window['go']['mila']['Mila']['CloudSyncWatchRoomPlayback'](arg1);
+}
+
+export function CloudTransferWatchRoomHost(arg1) {
+  return window['go']['mila']['Mila']['CloudTransferWatchRoomHost'](arg1);
+}
+
+export function CloudUnblockUser(arg1) {
+  return window['go']['mila']['Mila']['CloudUnblockUser'](arg1);
+}
+
+export function CloudUpdateWatchRoomMember(arg1) {
+  return window['go']['mila']['Mila']['CloudUpdateWatchRoomMember'](arg1);
+}
+
+export function CloudUpdateWatchRoomSettings(arg1) {
+  return window['go']['mila']['Mila']['CloudUpdateWatchRoomSettings'](arg1);
+}
+
+export function ConsumePendingDeepLink() {
+  return window['go']['mila']['Mila']['ConsumePendingDeepLink']();
+}
+
 export function ExportDiagnosticsLogs(arg1) {
   return window['go']['mila']['Mila']['ExportDiagnosticsLogs'](arg1);
+}
+
+export function GetAniSkipTimes(arg1, arg2) {
+  return window['go']['mila']['Mila']['GetAniSkipTimes'](arg1, arg2);
 }
 
 export function GetAppVersion() {
@@ -66,6 +178,10 @@ export function GetUpdateStatus() {
   return window['go']['mila']['Mila']['GetUpdateStatus']();
 }
 
+export function HandleDeepLink(arg1) {
+  return window['go']['mila']['Mila']['HandleDeepLink'](arg1);
+}
+
 export function HentaiGetEpisodes(arg1, arg2) {
   return window['go']['mila']['Mila']['HentaiGetEpisodes'](arg1, arg2);
 }
@@ -86,8 +202,20 @@ export function SetFullscreenFocus(arg1) {
   return window['go']['mila']['Mila']['SetFullscreenFocus'](arg1);
 }
 
+export function SetPendingDeepLink(arg1) {
+  return window['go']['mila']['Mila']['SetPendingDeepLink'](arg1);
+}
+
 export function SetPipMode(arg1) {
   return window['go']['mila']['Mila']['SetPipMode'](arg1);
+}
+
+export function SetTrayIcon(arg1) {
+  return window['go']['mila']['Mila']['SetTrayIcon'](arg1);
+}
+
+export function SetTrayPlaying(arg1) {
+  return window['go']['mila']['Mila']['SetTrayPlaying'](arg1);
 }
 
 export function StartPipDrag() {

@@ -11,7 +11,37 @@ export function AnimeVostSearch(arg1:string):Promise<string>;
 
 export function CheckAndInstallUpdate():Promise<string>;
 
+export function CloudAcceptFriendRequest(arg1:string):Promise<string>;
+
+export function CloudBlockUser(arg1:string):Promise<string>;
+
+export function CloudCancelWatchRoomInvite(arg1:string):Promise<string>;
+
+export function CloudConnectWatchTogether(arg1:string):Promise<string>;
+
+export function CloudCreateWatchRoom(arg1:string):Promise<string>;
+
+export function CloudDeclineFriendRequest(arg1:string):Promise<string>;
+
+export function CloudDeclineWatchRoomInvite(arg1:string):Promise<string>;
+
+export function CloudDisconnectWatchTogether():Promise<string>;
+
 export function CloudGetSession():Promise<string>;
+
+export function CloudGetWatchRoom():Promise<string>;
+
+export function CloudHeartbeatPresence(arg1:string,arg2:string):Promise<string>;
+
+export function CloudInviteFriendToWatchRoom(arg1:string):Promise<string>;
+
+export function CloudJoinWatchRoom(arg1:string):Promise<string>;
+
+export function CloudKickWatchRoomMember(arg1:string):Promise<string>;
+
+export function CloudLeaveWatchRoom():Promise<string>;
+
+export function CloudListFriends():Promise<string>;
 
 export function CloudLoginWithGoogle():Promise<string>;
 
@@ -19,9 +49,35 @@ export function CloudLogout():Promise<string>;
 
 export function CloudPing():Promise<string>;
 
+export function CloudRemoveFriend(arg1:string):Promise<string>;
+
 export function CloudRequest(arg1:string,arg2:string,arg3:string):Promise<string>;
 
+export function CloudSearchUsers(arg1:string,arg2:number):Promise<string>;
+
+export function CloudSendFriendRequest(arg1:string):Promise<string>;
+
+export function CloudSendWatchRoomChat(arg1:string,arg2:string):Promise<string>;
+
+export function CloudSetUsername(arg1:string):Promise<string>;
+
+export function CloudSetWatchRoomMedia(arg1:string):Promise<string>;
+
+export function CloudSyncWatchRoomPlayback(arg1:string):Promise<string>;
+
+export function CloudTransferWatchRoomHost(arg1:string):Promise<string>;
+
+export function CloudUnblockUser(arg1:string):Promise<string>;
+
+export function CloudUpdateWatchRoomMember(arg1:string):Promise<string>;
+
+export function CloudUpdateWatchRoomSettings(arg1:string):Promise<string>;
+
+export function ConsumePendingDeepLink():Promise<string>;
+
 export function ExportDiagnosticsLogs(arg1:string):Promise<string>;
+
+export function GetAniSkipTimes(arg1:number,arg2:number):Promise<string>;
 
 export function GetAppVersion():Promise<string>;
 
@@ -33,6 +89,8 @@ export function GetTorrentMediaBase():Promise<string>;
 
 export function GetUpdateStatus():Promise<string>;
 
+export function HandleDeepLink(arg1:string):Promise<void>;
+
 export function HentaiGetEpisodes(arg1:string,arg2:string):Promise<string>;
 
 export function HentaiSearch(arg1:string):Promise<string>;
@@ -43,7 +101,13 @@ export function SetFullscreen(arg1:boolean):Promise<void>;
 
 export function SetFullscreenFocus(arg1:boolean):Promise<void>;
 
+export function SetPendingDeepLink(arg1:string):Promise<void>;
+
 export function SetPipMode(arg1:boolean):Promise<void>;
+
+export function SetTrayIcon(arg1:Array<number>):Promise<void>;
+
+export function SetTrayPlaying(arg1:boolean):Promise<void>;
 
 export function StartPipDrag():Promise<void>;
 

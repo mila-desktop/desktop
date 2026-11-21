@@ -51,7 +51,7 @@
     border: none;
     outline: none;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--mila-toggle-trackOff, rgba(255, 255, 255, 0.14));
     cursor: pointer;
     box-sizing: border-box;
     transition:
@@ -60,8 +60,8 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .mk-toggle:hover:not(.is-disabled) {
-    background: rgba(255, 255, 255, 0.2);
+  .mk-toggle:hover:not(.is-disabled):not(.is-checked) {
+    background: var(--mila-app-surfaceHover, rgba(255, 255, 255, 0.2));
   }
 
   .mk-toggle:active:not(.is-disabled) {

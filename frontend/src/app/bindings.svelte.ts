@@ -15,6 +15,7 @@ import {
   stepToHistoryIndex
 } from './router.svelte';
 import { closeSearch, openSearch, search } from './search.svelte';
+import { matchesShortcut, settingsState } from './settings.svelte';
 
 export type BindingActionId =
   | 'nav.back'
@@ -366,7 +367,7 @@ export function mountBindingsController(): () => void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.defaultPrevented) return;
 
-    if (e.key === 'F11') {
+    if (matchesShortcut(e, settingsState.shortcuts.appFullscreen)) {
       e.preventDefault();
       void toggleAppFullscreen();
       return;
@@ -406,7 +407,7 @@ export function mountBindingsController(): () => void {
       return;
     }
 
-    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !search.open) {
+    if (matchesShortcut(e, settingsState.shortcuts.appSearch) && !search.open) {
       e.preventDefault();
       openSearch();
     }

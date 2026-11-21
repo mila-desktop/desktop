@@ -7,6 +7,9 @@
     trailingIcon?: Snippet;
     onclick?: (e: MouseEvent) => void;
     class?: string;
+    size?: 'md' | 'sm' | 'icon';
+    ariaLabel?: string;
+    title?: string;
     type?: 'button' | 'submit' | 'reset';
     loading?: boolean;
     disabled?: boolean;
@@ -18,6 +21,9 @@
     trailingIcon,
     onclick,
     class: className = '',
+    size = 'md',
+    ariaLabel,
+    title,
     type = 'button',
     loading = false,
     disabled = false
@@ -26,7 +32,9 @@
 
 <button
   {type}
-  class="marlakit-btn-second {className}"
+  aria-label={ariaLabel}
+  {title}
+  class="marlakit-btn-second is-size-{size} {className}"
   class:loading
   disabled={disabled || loading}
   {onclick}
@@ -83,6 +91,26 @@
     line-height: 1;
     margin: 0;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, opacity 0.15s ease;
+  }
+
+  .marlakit-btn-second.is-size-sm {
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+
+  .marlakit-btn-second.is-size-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .marlakit-btn-second.is-size-icon .btn-icon {
+    transform: none;
   }
 
   .marlakit-btn-second:hover:not(:disabled) {

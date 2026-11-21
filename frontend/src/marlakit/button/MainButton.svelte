@@ -7,6 +7,8 @@
     trailingIcon?: Snippet;
     onclick?: (e: MouseEvent) => void;
     class?: string;
+    size?: 'md' | 'sm';
+    ariaLabel?: string;
     type?: 'button' | 'submit' | 'reset';
     loading?: boolean;
     disabled?: boolean;
@@ -18,6 +20,8 @@
     trailingIcon,
     onclick,
     class: className = '',
+    size = 'md',
+    ariaLabel,
     type = 'button',
     loading = false,
     disabled = false
@@ -26,7 +30,8 @@
 
 <button
   {type}
-  class="marlakit-btn-main {className}"
+  aria-label={ariaLabel}
+  class="marlakit-btn-main is-size-{size} {className}"
   class:loading
   disabled={disabled || loading}
   {onclick}
@@ -81,6 +86,13 @@
     line-height: 1;
     margin: 0;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, opacity 0.15s ease;
+  }
+
+  .marlakit-btn-main.is-size-sm {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 13px;
   }
 
   .marlakit-btn-main:hover:not(:disabled) {

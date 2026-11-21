@@ -34,6 +34,7 @@
   import { t } from '../../app/i18n.svelte';
   import { getLoadedHls, loadHls } from '../../app/hlsLoader';
   import { releaseVideoElementBuffers, safeStorageSet } from '../../app/lifecycle';
+  import { matchesShortcut, settingsState } from '../../app/settings.svelte';
   import { createLazyModuleLoader } from '../../api/providers/lazy';
   import {
     createMaxQualityHlsConfig,
@@ -310,11 +311,14 @@
         // - From 0.45s up to 30s drift: NEVER teleport/seek (which causes buffer flush & loader spinner);
         //   instead smoothly accelerate or decelerate playbackRate until caught up with host.
         // - Only hard-seek if drift > 30s (e.g. host scrubbed across the episode timeline).
-        if (absDrift > 30.0 && now - lastRemoteHardSeekAt > 3000) {
+        const deadband = settingsState.wtDriftDeadband || 0.45;
+        const maxCatchup = settingsState.wtMaxCatchupRate || 1.35;
+        const hardSeekThreshold = settingsState.wtHardSeekSec || 30;
+        if (absDrift > hardSeekThreshold && now - lastRemoteHardSeekAt > 3000) {
           lastRemoteHardSeekAt = now;
           applyPlaybackRate(baseRate);
           seekTo(clamped, true);
-        } else if (absDrift > 0.45) {
+        } else if (absDrift > deadband) {
           const factor =
             absDrift > 10.0
               ? 0.35
@@ -327,7 +331,7 @@
                     : 0.04;
           const catchupRate = Math.max(
             0.7,
-            Math.min(1.4, Number((baseRate * (1 + Math.sign(signedDrift) * factor)).toFixed(3)))
+            Math.min(maxCatchup, Number((baseRate * (1 + Math.sign(signedDrift) * factor)).toFixed(3)))
           );
           if (Math.abs((videoEl.playbackRate || 1) - catchupRate) > 0.008) {
             applyPlaybackRate(catchupRate);
@@ -700,7 +704,7 @@
   const videoFilterCss = $derived(`brightness(${videoPrefs.brightness.toFixed(2)})`);
 
   function showOsd(text: string, kind: 'volume' | 'mute' | 'seek' | 'speed' | 'play' | 'info' = 'info') {
-    if (isPip && !isFullscreen) return;
+    if ((isPip && !isFullscreen) || !settingsState.showPlayerOsd) return;
     osdText = text;
     osdKind = kind;
     osdVisible = true;
@@ -1064,7 +1068,7 @@
 
     untrack(() => {
       video.volume = volume;
-      video.muted = (Boolean(dubAudio) && dubReady) || muted;
+      video.muted = (Boolean(dubAudio) && dubReady) || muted || settingsState.startMuted;
       video.playbackRate = playbackRate;
     });
 
@@ -1209,10 +1213,17 @@
               label: t.label,
               lang: t.language
             }));
-            const preferredRus = probe.audioTracks.find((t) =>
-              /rus|ru/i.test(t.language || '') || /бан|dub|libria|cast|рус/i.test(t.title || '')
-            );
-            initAudio = preferredRus ? preferredRus.ordinal : probe.audioTracks[0].ordinal;
+            const matchRu = (t: (typeof probe.audioTracks)[number]) =>
+              /rus|ru/i.test(t.language || '') || /бан|dub|libria|cast|рус|студ/i.test(t.title || '');
+            const matchOrig = (t: (typeof probe.audioTracks)[number]) =>
+              /jpn|ja|jap|eng|en|orig/i.test(t.language || '') || /ориг|orig|jap|jpn|sub|raw/i.test(t.title || '');
+            let picked = probe.audioTracks[0];
+            if (settingsState.audioPriority === 'ru') {
+              picked = probe.audioTracks.find(matchRu) ?? probe.audioTracks[0];
+            } else if (settingsState.audioPriority === 'orig') {
+              picked = probe.audioTracks.find(matchOrig) ?? probe.audioTracks[probe.audioTracks.length - 1] ?? probe.audioTracks[0];
+            }
+            initAudio = picked.ordinal;
             activeAudioTrack = initAudio;
           }
           if (probe.subtitles.length > 0) {
@@ -1300,16 +1311,38 @@
 
           if (data.levels.length > 0) {
             const maxIdx = pickHighestLevelIndex(data.levels);
-            instance.startLevel = maxIdx;
-            if (lockMax) {
-              // Lock onto highest quality (e.g. 1080p) so playback never degrades unless switched.
-              instance.currentLevel = maxIdx;
-              selectedLevel = maxIdx;
-            } else {
+            const prefQual = settingsState.defaultQuality;
+            if (prefQual === 'auto') {
+              instance.startLevel = -1;
               instance.currentLevel = -1;
               selectedLevel = -1;
+              activeLevelIndex = maxIdx;
+            } else if (prefQual === '720p') {
+              let best720 = -1;
+              let bestHeight = -1;
+              data.levels.forEach((lvl, idx) => {
+                const h = lvl.height || 0;
+                if (h > 0 && h <= 720 && h > bestHeight) {
+                  bestHeight = h;
+                  best720 = idx;
+                }
+              });
+              const targetIdx = best720 >= 0 ? best720 : maxIdx;
+              instance.startLevel = targetIdx;
+              instance.currentLevel = targetIdx;
+              selectedLevel = targetIdx;
+              activeLevelIndex = targetIdx;
+            } else {
+              instance.startLevel = maxIdx;
+              if (lockMax) {
+                instance.currentLevel = maxIdx;
+                selectedLevel = maxIdx;
+              } else {
+                instance.currentLevel = -1;
+                selectedLevel = -1;
+              }
+              activeLevelIndex = maxIdx;
             }
-            activeLevelIndex = maxIdx;
           }
 
           applyInitialResume();
@@ -1325,6 +1358,16 @@
             label: t.name || t.lang || `Audio ${i + 1}`,
             lang: t.lang
           }));
+          if (audioTracks.length > 1 && settingsState.audioPriority !== 'first') {
+            const matchPref =
+              settingsState.audioPriority === 'ru'
+                ? (tr: AudioTrackOption) => /rus|ru/i.test(tr.lang || '') || /рус|бан|dub|libria/i.test(tr.label || '')
+                : (tr: AudioTrackOption) => /jpn|ja|jap|eng|en|orig/i.test(tr.lang || '') || /ориг|orig|jap|jpn/i.test(tr.label || '');
+            const wanted = audioTracks.find(matchPref);
+            if (wanted && wanted.index !== instance.audioTrack) {
+              instance.audioTrack = wanted.index;
+            }
+          }
           activeAudioTrack = instance.audioTrack;
         });
 
@@ -2095,7 +2138,11 @@
 
     if (isHotkeyBlocked(e)) return;
 
-    if (e.code === 'Space' || e.key === ' ') {
+    const sc = settingsState.shortcuts;
+    const seekSec = settingsState.seekStepSec || 5;
+    const volStep = (settingsState.volumeStepPct || 5) / 100;
+
+    if (matchesShortcut(e, sc.playPause) && (e.code === 'Space' || e.key === ' ')) {
       e.preventDefault();
       if (controlsLocked) {
         showOsd('Host controls playback', 'info');
@@ -2107,7 +2154,7 @@
       spaceHoldTimer = window.setTimeout(() => {
         if (!spaceIsDown || !videoEl || videoEl.ended) return;
         spaceHoldBoostActive = true;
-        applyPlaybackRate(2);
+        applyPlaybackRate(settingsState.holdBoostRate || 2);
         if (videoEl.paused) {
           void videoEl.play().catch(() => {});
         }
@@ -2116,7 +2163,7 @@
     }
 
     const digitMatch = /^Digit([0-9])$/.exec(e.code) || /^Numpad([0-9])$/.exec(e.code);
-    if (digitMatch) {
+    if (digitMatch && !e.ctrlKey && !e.altKey && !e.shiftKey) {
       if (controlsLocked) {
         e.preventDefault();
         showOsd('Host controls playback', 'info');
@@ -2132,84 +2179,70 @@
       return;
     }
 
-    switch (e.code) {
-      case 'KeyK':
+    if (matchesShortcut(e, sc.playPause) || e.code === 'KeyK') {
+      e.preventDefault();
+      if (controlsLocked) {
+        showOsd('Host controls playback', 'info');
+        return;
+      }
+      if (videoEl) {
+        const willPlay = videoEl.paused;
+        togglePlay();
+        showOsd(willPlay ? 'Play' : 'Pause', 'play');
+      }
+    } else if (matchesShortcut(e, sc.seekBack)) {
+      e.preventDefault();
+      stepSeekHotkey(-seekSec);
+    } else if (matchesShortcut(e, sc.seekForward)) {
+      e.preventDefault();
+      stepSeekHotkey(seekSec);
+    } else if (matchesShortcut(e, sc.jumpBack)) {
+      e.preventDefault();
+      stepSeekHotkey(-seekSec * 2);
+    } else if (matchesShortcut(e, sc.jumpForward)) {
+      e.preventDefault();
+      stepSeekHotkey(seekSec * 2);
+    } else if (matchesShortcut(e, sc.volUp)) {
+      e.preventDefault();
+      stepVolumeHotkey(volStep);
+    } else if (matchesShortcut(e, sc.volDown)) {
+      e.preventDefault();
+      stepVolumeHotkey(-volStep);
+    } else if (matchesShortcut(e, sc.mute)) {
+      e.preventDefault();
+      toggleMute();
+      showOsd(muted ? 'Muted' : `Volume ${Math.round(volume * 100)}%`, muted ? 'mute' : 'volume');
+    } else if (matchesShortcut(e, sc.fullscreen)) {
+      e.preventDefault();
+      void toggleFullscreen();
+    } else if (matchesShortcut(e, sc.nextEp)) {
+      if (hasNext && onnext) {
         e.preventDefault();
-        if (controlsLocked) {
-          showOsd('Host controls playback', 'info');
-          break;
+        showOsd('Next Episode', 'info');
+        onnext();
+      }
+    } else if (matchesShortcut(e, sc.prevEp)) {
+      if (hasPrev && onprev) {
+        e.preventDefault();
+        showOsd('Previous Episode', 'info');
+        onprev();
+      }
+    } else if (matchesShortcut(e, sc.skipOp)) {
+      if (skipTarget) {
+        e.preventDefault();
+        const label = skipTarget.label;
+        seekTo(skipTarget.to);
+        showOsd(label, 'seek');
+      }
+    } else if (matchesShortcut(e, sc.subtitles)) {
+      if (subtitleTracks.length > 0) {
+        e.preventDefault();
+        if (activeSubtitleTrack >= 0) {
+          setSubtitleTrack(-1, true);
+        } else {
+          setSubtitleTrack(subtitleTracks[0].index, true);
         }
-        if (videoEl) {
-          const willPlay = videoEl.paused;
-          togglePlay();
-          showOsd(willPlay ? 'Play' : 'Pause', 'play');
-        }
-        break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        stepSeekHotkey(-5);
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        stepSeekHotkey(5);
-        break;
-      case 'KeyJ':
-        e.preventDefault();
-        stepSeekHotkey(-10);
-        break;
-      case 'KeyL':
-        e.preventDefault();
-        stepSeekHotkey(10);
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        stepVolumeHotkey(0.05);
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        stepVolumeHotkey(-0.05);
-        break;
-      case 'KeyM':
-        e.preventDefault();
-        toggleMute();
-        showOsd(muted ? 'Muted' : `Volume ${Math.round(volume * 100)}%`, muted ? 'mute' : 'volume');
-        break;
-      case 'KeyF':
-        e.preventDefault();
-        void toggleFullscreen();
-        break;
-      case 'KeyN':
-        if (hasNext && onnext) {
-          e.preventDefault();
-          showOsd('Next Episode', 'info');
-          onnext();
-        }
-        break;
-      case 'KeyP':
-        if (hasPrev && onprev) {
-          e.preventDefault();
-          showOsd('Previous Episode', 'info');
-          onprev();
-        }
-        break;
-      case 'KeyS':
-        if (skipTarget) {
-          e.preventDefault();
-          const label = skipTarget.label;
-          seekTo(skipTarget.to);
-          showOsd(label, 'seek');
-        }
-        break;
-      case 'KeyC':
-        if (subtitleTracks.length > 0) {
-          e.preventDefault();
-          if (activeSubtitleTrack >= 0) {
-            setSubtitleTrack(-1, true);
-          } else {
-            setSubtitleTrack(subtitleTracks[0].index, true);
-          }
-        }
-        break;
+      }
     }
   }
 
@@ -2231,6 +2264,43 @@
     spaceIsDown = false;
     releaseSpaceHoldBoost();
   }
+
+  $effect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const handleVisibility = () => {
+      if (document.hidden && settingsState.pauseOnMinimize && videoEl && !videoEl.paused) {
+        videoEl.pause();
+        if (dubAudioEl && !dubAudioEl.paused) {
+          dubAudioEl.pause();
+        }
+      }
+    };
+    const handleSysPrefsChanged = () => {
+      videoPrefs = readSavedVideoPrefs();
+      const targetVol = settingsState.defaultVolume;
+      if (Number.isFinite(targetVol) && Math.abs(volume - targetVol) > 0.005) {
+        volume = targetVol;
+        if (videoEl) videoEl.volume = targetVol;
+        if (dubAudioEl) dubAudioEl.volume = targetVol;
+      }
+      if (settingsState.startMuted && !muted) {
+        muted = true;
+        if (videoEl) videoEl.muted = true;
+        if (dubAudioEl) dubAudioEl.muted = true;
+      }
+      const targetSpeed = settingsState.defaultSpeed;
+      if (Number.isFinite(targetSpeed) && Math.abs(playbackRate - targetSpeed) > 0.01) {
+        playbackRate = targetSpeed;
+        applyPlaybackRate(targetSpeed);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('mila:sys-prefs-changed', handleSysPrefsChanged);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('mila:sys-prefs-changed', handleSysPrefsChanged);
+    };
+  });
 
   function updateBuffered() {
     if (!videoEl || videoEl.buffered.length === 0) {
@@ -3172,6 +3242,10 @@
     display: block;
     object-fit: contain;
     background: #000000;
+  }
+
+  .hls-video::cue {
+    font-size: calc(1em * var(--mila-sub-scale, 1));
   }
 
   .top-bar {

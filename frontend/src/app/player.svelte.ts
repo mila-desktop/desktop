@@ -20,6 +20,7 @@ import { fetchAniSkipTimes, hasSkipInterval, mergeEpisodeSkipFallback } from '..
 import { NextEpisodePrefetcher } from './prefetch';
 import { createLazyModuleLoader } from '../api/providers/lazy';
 import type { TorrentSearchItem } from '../api/providers/torrent';
+import { settingsState } from './settings.svelte';
 
 const torrentLoader = createLazyModuleLoader(() => import('../api/providers/torrent'));
 import type { VoiceTrackOption } from '../marlakit/player/types';
@@ -263,15 +264,17 @@ export function reportPlaybackProgress(currentTime: number, duration: number, fo
   if (Number.isFinite(duration) && duration > 0) {
     player.liveDuration = duration;
   }
-  episodePrefetcher.maybePrefetch({
-    release: player.release,
-    episodeIndex: player.episodeIndex,
-    currentTime,
-    duration,
-    dubRelease: player.dubRelease,
-    dubVoiceId: player.dubVoiceId,
-    malId: resolveCurrentMalId()
-  });
+  if (settingsState.prefetchNextEpisode) {
+    episodePrefetcher.maybePrefetch({
+      release: player.release,
+      episodeIndex: player.episodeIndex,
+      currentTime,
+      duration,
+      dubRelease: player.dubRelease,
+      dubVoiceId: player.dubVoiceId,
+      malId: resolveCurrentMalId()
+    });
+  }
 
   const now = Date.now();
   if (!force && now - lastHistorySyncMs < 3000) return;
@@ -555,7 +558,12 @@ export async function openTorrentStream(
       remux: {
         hash: info.infoHash,
         fileIndex: f.fileIndex,
-        needsRemux: f.needsRemux,
+        needsRemux:
+          settingsState.torrentRemuxMode === 'always'
+            ? true
+            : settingsState.torrentRemuxMode === 'direct'
+              ? false
+              : f.needsRemux,
         label: typeof magnetOrItem === 'string' ? 'BDRip 1080p' : magnetOrItem.quality || '1080p'
       }
     }));
@@ -683,7 +691,7 @@ export async function openWatch(
   }
 ): Promise<void> {
   const token = ++activeRequestToken;
-  const shouldAutoPlay = Boolean(opts?.autoPlay);
+  const shouldAutoPlay = opts?.autoPlay !== undefined ? Boolean(opts.autoPlay) : settingsState.autoPlayOnOpen;
   player.seasons = [];
   player.pipMode = false;
   player.pipManual = false;
@@ -733,7 +741,7 @@ export function openAnimePlayer(opts?: { episodeIndex?: number; episodeOrdinal?:
     }
   }
 
-  player.autoplay = true;
+  player.autoplay = settingsState.autoPlayOnOpen;
   player.pipMode = false;
   player.pipManual = false;
   player.pipDismissed = false;
@@ -745,7 +753,7 @@ export function openAnimePlayer(opts?: { episodeIndex?: number; episodeOrdinal?:
     alias: rel?.alias ?? target?.releaseAlias,
     title: player.shikiArt?.english || player.shikiArt?.name || rel?.title || target?.title || player.title,
     searchQueries: target?.searchQueries,
-    autoPlay: true,
+    autoPlay: settingsState.autoPlayOnOpen,
     episode: player.episodeIndex,
     episodeOrdinal: opts?.episodeOrdinal ?? ep?.ordinal,
     resumeTime: player.resumeTime

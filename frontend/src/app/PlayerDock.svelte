@@ -8,6 +8,7 @@
     setOsPipWindowMode,
     startOsPipWindowDrag
   } from './bindings.svelte';
+  import { settingsState } from './settings.svelte';
   import {
     closeCustomPip,
     expandCustomPip,
@@ -82,7 +83,7 @@
   $effect.pre(() => {
     const curPage = router.current;
     if (isInlinePlayerPage(prevPage) && !isInlinePlayerPage(curPage)) {
-      if (currentEpisode && player.isPlaying && !player.pipDismissed) {
+      if (settingsState.autoEnterPip && currentEpisode && player.isPlaying && !player.pipDismissed) {
         player.pipMode = true;
       }
     } else if (!isInlinePlayerPage(prevPage) && isInlinePlayerPage(curPage)) {

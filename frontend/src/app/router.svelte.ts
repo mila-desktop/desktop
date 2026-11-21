@@ -1,6 +1,7 @@
 import type { PageId } from '../pages';
+import { settingsState } from './settings.svelte';
 
-const DEFAULT_PAGE: PageId = 'home';
+const DEFAULT_PAGE: PageId = settingsState.startupPage || 'home';
 const MAX_HISTORY_ENTRIES = 64;
 
 export interface RouteParams {

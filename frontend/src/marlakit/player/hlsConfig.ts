@@ -1,16 +1,18 @@
 import type { HlsConfig } from 'hls.js';
 import type { HlsSources, QualityVariant, TorrentRemuxConfig } from './types';
+import { settingsState } from '../../app/settings.svelte';
 
 // Maximum-quality HLS configuration tuned for desktop anime VOD playback.
 export function createMaxQualityHlsConfig(overrides: Partial<HlsConfig> = {}): Partial<HlsConfig> {
+  const bufSec = settingsState.hlsBufferSec || 30;
   return {
     enableWorker: true,
     lowLatencyMode: false,
     capLevelToPlayerSize: false,
     abrEwmaDefaultEstimate: 25_000_000,
     abrEwmaDefaultEstimateMax: 100_000_000,
-    maxBufferLength: 45,
-    maxMaxBufferLength: 120,
+    maxBufferLength: bufSec,
+    maxMaxBufferLength: Math.max(90, bufSec * 3),
     backBufferLength: 30,
     maxBufferHole: 0.5,
     fragLoadingMaxRetry: 4,

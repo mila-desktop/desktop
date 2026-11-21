@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -44,6 +45,17 @@ type Mila struct {
 	openBrowser      func(ctx context.Context, url string)
 }
 
+func openSystemBrowser(targetURL string) {
+	switch runtime.GOOS {
+	case "windows":
+		_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", targetURL).Start()
+	case "darwin":
+		_ = exec.Command("open", targetURL).Start()
+	default:
+		_ = exec.Command("xdg-open", targetURL).Start()
+	}
+}
+
 // SetTrayIcon stores the embedded .ico payload used for the native system tray icon.
 func (m *Mila) SetTrayIcon(ico []byte) {
 	m.trayIconICO = ico
@@ -74,10 +86,11 @@ func New() *Mila {
 		}
 	}
 	m.openBrowser = func(ctx context.Context, url string) {
-		if ctx == nil || !m.runtimeStarted.Load() {
+		if ctx != nil && m.runtimeStarted.Load() {
+			wailsRuntime.BrowserOpenURL(ctx, url)
 			return
 		}
-		wailsRuntime.BrowserOpenURL(ctx, url)
+		openSystemBrowser(url)
 	}
 	m.emitCloseEvent = func(ctx context.Context, eventName string) {
 		if ctx == nil || !m.runtimeStarted.Load() {

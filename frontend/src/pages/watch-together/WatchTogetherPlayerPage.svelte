@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from 'svelte';
+  import { settingsState } from '../../app/settings.svelte';
   import { fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import { MorphIcon } from 'morphicons/svelte';
@@ -92,8 +93,11 @@
   }
 
   function readSavedChatPinned(): boolean {
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem(WT_CHAT_PINNED_KEY) === '1';
+    if (typeof localStorage === 'undefined') return settingsState.wtChatPinned;
+    const raw = localStorage.getItem(WT_CHAT_PINNED_KEY);
+    if (raw === '1') return true;
+    if (raw === '0') return false;
+    return settingsState.wtChatPinned;
   }
 
   let viewportW = $state(typeof window !== 'undefined' ? window.innerWidth : 1440);
@@ -104,7 +108,7 @@
   let chatFeedEl = $state<HTMLDivElement | null>(null);
   let floatPanelEl = $state<HTMLElement | null>(null);
 
-  let chatOpen = $state(true);
+  let chatOpen = $state(settingsState.wtChatAutoOpen);
   let chatPinned = $state(readSavedChatPinned());
   let chatWidthPx = $state(readSavedChatWidth());
   let chatHeightPx = $state(readSavedChatHeight());
@@ -1171,9 +1175,11 @@
               {:else}
                 {#each chatMessages as msg (msg.id)}
                   {#if msg.kind === 'system'}
-                    <div class="wt-msg-system">
-                      {msg.text}
-                    </div>
+                    {#if settingsState.wtShowSystemMsgs}
+                      <div class="wt-msg-system">
+                        {msg.text}
+                      </div>
+                    {/if}
                   {:else}
                     {@const isMine = msg.sender_public_id === myPublicId}
                     <div class="wt-msg-item" class:is-mine={isMine}>
@@ -1305,9 +1311,11 @@
               {:else}
                 {#each chatMessages as msg (msg.id)}
                   {#if msg.kind === 'system'}
-                    <div class="wt-msg-system">
-                      {msg.text}
-                    </div>
+                    {#if settingsState.wtShowSystemMsgs}
+                      <div class="wt-msg-system">
+                        {msg.text}
+                      </div>
+                    {/if}
                   {:else}
                     {@const isMine = msg.sender_public_id === myPublicId}
                     <div class="wt-msg-item" class:is-mine={isMine}>

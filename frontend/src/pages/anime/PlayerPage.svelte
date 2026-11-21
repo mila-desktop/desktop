@@ -33,6 +33,7 @@
     setInlinePlayerStage
   } from '../../app/player.svelte';
   import { t } from '../../app/i18n.svelte';
+  import { setSettingPref, settingsState } from '../../app/settings.svelte';
 
   const EP_PAGE_SIZE = 16;
   const EP_VIEW_MODE_KEY = 'mila.anime.episodesViewMode';
@@ -48,7 +49,10 @@
   let playerSectionEl = $state<HTMLElement | null>(null);
   let inlineStageEl = $state<HTMLDivElement | null>(null);
 
-  let epViewMode = $state<'grid' | 'list'>(readSavedViewMode(EP_VIEW_MODE_KEY, 'grid'));
+  let epViewMode = $state<'grid' | 'list'>(settingsState.episodesView || readSavedViewMode(EP_VIEW_MODE_KEY, 'grid'));
+  $effect(() => {
+    epViewMode = settingsState.episodesView;
+  });
   let epSortBy = $state<EpSortKey>('order');
   let epSortDir = $state<'asc' | 'desc'>('asc');
   let epRangeIndex = $state(0);
@@ -209,12 +213,7 @@
   function setEpisodeViewMode(mode: 'grid' | 'list') {
     if (epViewMode === mode) return;
     epViewMode = mode;
-    if (typeof localStorage === 'undefined') return;
-    try {
-      localStorage.setItem(EP_VIEW_MODE_KEY, mode);
-    } catch {
-      // Ignore storage errors
-    }
+    setSettingPref('episodesView', mode, EP_VIEW_MODE_KEY);
   }
 
   function getEpProgressInfo(epIdx: number, ordinal: number) {

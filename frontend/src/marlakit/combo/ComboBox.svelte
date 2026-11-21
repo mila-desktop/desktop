@@ -293,6 +293,7 @@
   {#if open && (normalizedSections.length > 0 || header || footer)}
     <div
       class="marla-combo-layer placement-{placement} {menuClass}"
+      role="presentation"
       transition:comboTransition={{ dirY: placement.startsWith('top') ? 6 : -6 }}
       style:transform-origin={resolvedTransformOrigin}
       onmouseleave={scheduleSubClose}

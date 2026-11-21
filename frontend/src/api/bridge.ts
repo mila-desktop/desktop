@@ -138,10 +138,14 @@ export async function resolveBackendApiBase(
     return cachedApiBase;
   }
 
-  const candidates: Array<{ healthUrl: string; apiBase: string }> = [
-    { healthUrl: '/health', apiBase: '/api/v1' },
-    { healthUrl: 'http://localhost:8080/health', apiBase: 'http://localhost:8080/api/v1' }
-  ];
+  // Inside Wails runtime (or Wails dev server), Go IPC handles native routes directly; skip probing :8080 if unreachable.
+  const hasWailsBridge = Boolean(getWailsMilaBridge());
+  const candidates: Array<{ healthUrl: string; apiBase: string }> = hasWailsBridge
+    ? [{ healthUrl: '/health', apiBase: '/api/v1' }]
+    : [
+        { healthUrl: '/health', apiBase: '/api/v1' },
+        { healthUrl: 'http://localhost:8080/health', apiBase: 'http://localhost:8080/api/v1' }
+      ];
 
   for (const candidate of candidates) {
     try {
@@ -157,7 +161,7 @@ export async function resolveBackendApiBase(
   }
 
   cachedApiBase = null;
-  cacheExpiresAt = now + HEALTH_PROBE_CACHE_MS;
+  cacheExpiresAt = now + HEALTH_PROBE_CACHE_MS * 4;
   return null;
 }
 
